@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 제주 감귤 축제 — 3D 발표</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a;
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    cursor: default;
+  }
+  #canvas-container {
+    position: fixed;
+    inset: 0;
+  }
+  canvas { display: block; }
+
+  /* HUD */
+  #hud {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* TOP BAR */
+  #top-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 52px;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(242,140,40,0.3);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+  }
+  #top-bar .logo {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f28c28;
+    letter-spacing: 1px;
+  }
+  #top-bar .sep { color: rgba(255,255,255,0.2); }
+  #top-bar .slide-title {
+    color: rgba(255,255,255,0.8);
+    font-size: 14px;
+    flex: 1;
+  }
+  #top-bar .counter {
+    color: rgba(255,255,255,0.4);
+    font-size: 12px;
+  }
+
+  /* PROGRESS */
+  #progress-track {
+    position: absolute;
+    top: 52px; left: 0; right: 0;
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+  }
+  #progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f28c28, #ffb84d);
+    transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  /* CONTENT PANEL */
+  #content-panel {
+    position: absolute;
+    right: 24px;
+    top: 72px;
+    width: 340px;
+    bottom: 90px;
+    background: rgba(10,8,6,0.82);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(242,140,40,0.25);
+    border-radius: 16px;
+    padding: 24px;
+    overflow-y: auto;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  #content-panel::-webkit-scrollbar { width: 4px; }
+  #content-panel::-webkit-scrollbar-track { background: transparent; }
+  #content-panel::-webkit-scrollbar-thumb { background: rgba(242,140,40,0.3); border-radius: 2px; }
+
+  .panel-section-tag {
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    color: #f28c28;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .panel-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.3;
+    margin-bottom: 14px;
+  }
+  .panel-body {
+    font-size: 13px;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.8;
+  }
+  .panel-divider {
+    height: 1px;
+    background: rgba(242,140,40,0.15);
+    margin: 16px 0;
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .info-row .key { font-size: 12px; color: rgba(255,255,255,0.4); }
+  .info-row .val { font-size: 13px; color: #fff; font-weight: 600; }
+
+  .highlight-box {
+    background: rgba(242,140,40,0.1);
+    border: 1px solid rgba(242,140,40,0.3);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-top: 12px;
+  }
+  .highlight-box .h-num {
+    font-size: 32px;
+    font-weight: 700;
+    color: #f28c28;
+    line-height: 1;
+  }
+  .highlight-box .h-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 4px;
+  }
+
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .tag {
+    background: rgba(242,140,40,0.15);
+    border: 1px solid rgba(242,140,40,0.25);
+    color: #f28c28;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  .budget-bar-item {
+    margin-bottom: 10px;
+  }
+  .budget-bar-item .b-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .budget-bar-item .b-name { font-size: 12px; color: rgba(255,255,255,0.6); }
+  .budget-bar-item .b-amt { font-size: 12px; color: #f28c28; font-weight: 700; }
+  .budget-track {
+    height: 5px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .budget-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f28c28, #ffb84d);
+    border-radius: 3px;
+  }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .kpi-box {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+  .kpi-box .k-num { font-size: 22px; font-weight: 700; color: #f28c28; }
+  .kpi-box .k-unit { font-size: 10px; color: rgba(255,255,255,0.4); }
+  .kpi-box .k-label { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 3px; }
+
+  .prog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .prog-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+  .prog-item .p-icon { font-size: 20px; }
+  .prog-item .p-name { font-size: 13px; font-weight: 600; color: #fff; }
+  .prog-item .p-sub { font-size: 11px; color: rgba(255,255,255,0.4); }
+
+  .timeline-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 12px;
+  }
+  .tl-item {
+    display: flex;
+    gap: 14px;
+    position: relative;
+  }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 20px;
+    bottom: -8px;
+    width: 2px;
+    background: rgba(242,140,40,0.2);
+  }
+  .tl-item:last-child::before { display: none; }
+  .tl-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #f28c28;
+    border: 2px solid rgba(242,140,40,0.3);
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+  .tl-content { padding-bottom: 16px; }
+  .tl-content .t-title { font-size: 13px; font-weight: 700; color: #fff; }
+  .tl-content .t-desc { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+
+  /* BOTTOM NAV */
+  #bottom-nav {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: all;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(242,140,40,0.25);
+    border-radius: 50px;
+    padding: 8px 16px;
+  }
+  .nav-btn {
+    background: rgba(242,140,40,0.15);
+    border: 1px solid rgba(242,140,40,0.3);
+    color: #f28c28;
+    padding: 8px 20px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-family: "Malgun Gothic", sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover { background: rgba(242,140,40,0.3); }
+  .nav-btn:disabled { opacity: 0.25; cursor: default; }
+  .nav-slide-num {
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+    min-width: 54px;
+    text-align: center;
+  }
+
+  /* LOCATION INDICATOR */
+  #location-badge {
+    position: absolute;
+    bottom: 90px;
+    left: 24px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(242,140,40,0.25);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #location-badge .loc-pin { font-size: 18px; }
+  #location-badge .loc-name { font-size: 12px; color: rgba(255,255,255,0.7); }
+
+  /* CHARACTER SPEECH BUBBLE */
+  #speech-bubble {
+    position: absolute;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    opacity: 0;
+  }
+  #speech-bubble.show { opacity: 1; }
+  #speech-bubble .bubble {
+    background: #fff;
+    color: #1a1a1a;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 16px 16px 16px 4px;
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    max-width: 200px;
+    white-space: normal;
+    line-height: 1.5;
+  }
+
+  /* MINIMAP */
+  #minimap {
+    position: absolute;
+    bottom: 90px;
+    left: 24px;
+    width: 160px;
+    height: 100px;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(242,140,40,0.2);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  #minimap canvas { width: 100%; height: 100%; }
+  #minimap .map-label {
+    position: absolute;
+    top: 6px; left: 8px;
+    font-size: 9px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 1px;
+  }
+
+  /* INTRO SCREEN */
+  #intro {
+    position: fixed;
+    inset: 0;
+    background: #0a0800;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: opacity 0.8s ease;
+  }
+  #intro .intro-emoji { font-size: 64px; margin-bottom: 20px; animation: bounce 1s infinite; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+  #intro h1 { font-size: 36px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  #intro h1 span { color: #f28c28; }
+  #intro p { font-size: 15px; color: rgba(255,255,255,0.5); margin-bottom: 40px; }
+  #start-btn {
+    background: #f28c28;
+    color: #fff;
+    border: none;
+    padding: 14px 40px;
+    border-radius: 50px;
+    font-size: 16px;
+    font-family: "Malgun Gothic", sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 0 30px rgba(242,140,40,0.4);
+  }
+  #start-btn:hover { transform: scale(1.04); box-shadow: 0 0 40px rgba(242,140,40,0.6); }
+
+  /* TRANSITION OVERLAY */
+  #transition-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(242,140,40,0);
+    pointer-events: none;
+    z-index: 50;
+    transition: background 0.2s;
+  }
+  #transition-overlay.flash { background: rgba(242,140,40,0.15); }
+</style>
+</head>
+<body>
+
+<!-- INTRO -->
+<div id="intro">
+  <div class="intro-emoji">🍊</div>
+  <h1>2026 제주 <span>감귤 축제</span></h1>
+  <p>캐릭터와 함께 제주를 여행하며 발표를 시작해보세요!</p>
+  <button id="start-btn" onclick="startPresentation()">🎊 발표 시작하기</button>
+</div>
+
+<div id="transition-overlay"></div>
+
+<!-- 3D CANVAS -->
+<div id="canvas-container"></div>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="top-bar">
+    <div class="logo">🍊 제주 감귤 축제</div>
+    <div class="sep">|</div>
+    <div class="slide-title" id="slide-title-hud">행사 개요</div>
+    <div class="counter" id="slide-counter-hud">1 / 8</div>
+  </div>
+  <div id="progress-track">
+    <div id="progress-fill" style="width:12.5%"></div>
+  </div>
+
+  <div id="content-panel"></div>
+
+  <div id="minimap">
+    <canvas id="minimap-canvas" width="320" height="200"></canvas>
+    <div class="map-label">MAP</div>
+  </div>
+
+  <div id="speech-bubble">
+    <div class="bubble" id="bubble-text">안녕하세요!</div>
+  </div>
+
+  <div id="bottom-nav">
+    <button class="nav-btn" id="prevBtn" onclick="navigate(-1)" disabled>◀ 이전</button>
+    <div class="nav-slide-num" id="nav-num">1 / 8</div>
+    <button class="nav-btn" id="nextBtn" onclick="navigate(1)">다음 ▶</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ============================================================
+// SLIDE DATA
+// ============================================================
+const SLIDES = [
+  {
+    id: 0,
+    title: "행사 개요",
+    location: "제주 공항 — 도착",
+    cameraPos: { x: 0, y: 8, z: 18 },
+    cameraTarget: { x: 0, y: 0, z: 0 },
+    charTarget: { x: -6, z: 4 },
+    speech: "안녕하세요! 제주에 오신 걸 환영합니다 🍊",
+    sky: 0x87CEEB,
+    content: `
+      <div class="panel-section-tag">OVERVIEW</div>
+      <div class="panel-title">행사 개요</div>
+      <div class="panel-body">제주 감귤 브랜드 가치 제고와 지역경제 활성화를 목표로 하는 대규모 축제입니다.</div>
+      <div class="panel-divider"></div>
+      <div class="info-row"><span class="key">행사명</span><span class="val">2026 제주 감귤 축제</span></div>
+      <div class="info-row"><span class="key">기간</span><span class="val">3박 4일</span></div>
+      <div class="info-row"><span class="key">장소</span><span class="val">제주대학교 캠퍼스</span></div>
+      <div class="info-row"><span class="key">총사업비</span><span class="val" style="color:#f28c28">2억 원</span></div>
+      <div class="highlight-box">
+        <div class="h-num">200M</div>
+        <div class="h-label">총 예산 (원)</div>
+      </div>
+    `
+  },
+  {
+    id: 1,
+    title: "추진 배경",
+    location: "한라산 전망대",
+    cameraPos: { x: -12, y: 10, z: 16 },
+    cameraTarget: { x: -8, y: 0, z: 0 },
+    charTarget: { x: -10, z: -2 },
+    speech: "여기 한라산에서 추진 배경을 말씀드릴게요!",
+    sky: 0x6BA3BE,
+    content: `
+      <div class="panel-section-tag">BACKGROUND</div>
+      <div class="panel-title">추진 배경</div>
+      <div class="panel-divider"></div>
+      <div class="timeline-list">
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="t-title">🌱 지속가능한 성장 기반 마련</div>
+            <div class="t-desc">감귤 산업의 장기적 발전을 위한 브랜드 강화 필요</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="t-title">🎪 참여형 축제 소비 촉진</div>
+            <div class="t-desc">체험·문화 콘텐츠로 자발적 소비 유도</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="t-title">🤝 농가 판로 지원</div>
+            <div class="t-desc">생산자·소비자 직접 교류 채널 마련</div>
+          </div>
+        </div>
+      </div>
+    `
+  },
+  {
+    id: 2,
+    title: "주요 프로그램",
+    location: "감귤 체험 농장",
+    cameraPos: { x: 8, y: 7, z: 14 },
+    cameraTarget: { x: 6, y: 0, z: 0 },
+    charTarget: { x: 6, z: 2 },
+    speech: "총 5가지 프로그램이 준비되어 있어요! 🎉",
+    sky: 0xF5A623,
+    content: `
+      <div class="panel-section-tag">PROGRAMS</div>
+      <div class="panel-title">주요 프로그램 5종</div>
+      <div class="prog-list">
+        <div class="prog-item">
+          <div class="p-icon">🍊</div>
+          <div><div class="p-name">감귤 체험존</div><div class="p-sub">수확·착즙·디저트 만들기</div></div>
+        </div>
+        <div class="prog-item">
+          <div class="p-icon">🏛️</div>
+          <div><div class="p-name">홍보·전시관</div><div class="p-sub">품종 전시, 스마트농업 홍보</div></div>
+        </div>
+        <div class="prog-item">
+          <div class="p-icon">🎵</div>
+          <div><div class="p-name">문화공연</div><div class="p-sub">개막식, 축하공연, 버스킹</div></div>
+        </div>
+        <div class="prog-item">
+          <div class="p-icon">🏪</div>
+          <div><div class="p-name">직거래 장터</div><div class="p-sub">감귤·제주 특산품 판매</div></div>
+        </div>
+        <div class="prog-item">
+          <div class="p-icon">🎉</div>
+          <div><div class="p-name">참여 이벤트</div><div class="p-sub">감귤 먹기 대회, SNS 이벤트</div></div>
+        </div>
+      </div>
+    `
+  },
+  {
+    id: 3,
+    title: "행사 일정",
+    location: "제주대학교 행사장",
+    cameraPos: { x: 0, y: 9, z: -12 },
+    cameraTarget: { x: 0, y: 0, z: -20 },
+    charTarget: { x: 2, z: -16 },
+    speech: "4일 동안 알찬 일정이 가득해요! 📅",
+    sky: 0x4A90D9,
+    content: `
+      <div class="panel-section-tag">SCHEDULE</div>
+      <div class="panel-title">4일간 행사 일정</div>
+      <div class="timeline-list">
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="t-title">DAY 1 — 개막 및 전시</div>
+            <div class="t-desc">개막식, 축하공연, 전시관 오픈, VIP 투어</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="t-title">DAY 2 — 체험 & 직거래 장터</div>
+            <div class="t-desc">수확 체험, 착즙 체험, 직거래 장터 개장</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="t-title">DAY 3 — 문화 & 이벤트</div>
+            <div class="t-desc">문화공연, 감귤 먹기 대회, SNS 이벤트</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <div class="t-title">DAY 4 — 폐막 & 성과공유</div>
+            <div class="t-desc">폐막식, 우수 농가 시상, 결과 보고</div>
+          </div>
+        </div>
+      </div>
+    `
+  },
+  {
+    id: 4,
+    title: "예산 계획",
+    location: "제주 시청 예산실",
+    cameraPos: { x: 14, y: 8, z: -10 },
+    cameraTarget: { x: 10, y: 0, z: -18 },
+    charTarget: { x: 12, z: -14 },
+    speech: "총 2억 원! 꼼꼼하게 계획했어요 💰",
+    sky: 0x2C3E50,
+    content: `
+      <div class="panel-section-tag">BUDGET</div>
+      <div class="panel-title">예산 계획</div>
+      <div class="highlight-box" style="margin-bottom:14px">
+        <div class="h-num">2억 원</div>
+        <div class="h-label">총 사업비 · 9개 항목</div>
+      </div>
+      <div class="budget-bar-item">
+        <div class="b-row"><span class="b-name">무대·시설 설치</span><span class="b-amt">6,000만원</span></div>
+        <div class="budget-track"><div class="budget-fill" style="width:100%"></div></div>
+      </div>
+      <div class="budget-bar-item">
+        <div class="b-row"><span class="b-name">프로그램 운영</span><span class="b-amt">3,000만원</span></div>
+        <div class="budget-track"><div class="budget-fill" style="width:50%"></div></div>
+      </div>
+      <div class="budget-bar-item">
+        <div class="b-row"><span class="b-name">체험 프로그램</span><span class="b-amt">2,000만원</span></div>
+        <div class="budget-track"><div class="budget-fill" style="width:33%"></div></div>
+      </div>
+      <div class="budget-bar-item">
+        <div class="b-row"><span class="b-name">홍보비</span><span class="b-amt">2,000만원</span></div>
+        <div class="budget-track"><div class="budget-fill" style="width:33%"></div></div>
+      </div>
+      <div class="budget-bar-item">
+        <div class="b-row"><span class="b-name">안전관리</span><span class="b-amt">1,500만원</span></div>
+        <div class="budget-track"><div class="budget-fill" style="width:25%"></div></div>
+      </div>
+      <div class="budget-bar-item">
+        <div class="b-row"><span class="b-name">운영인력</span><span class="b-amt">2,000만원</span></div>
+        <div class="budget-track"><div class="budget-fill" style="width:33%"></div></div>
+      </div>
+      <div class="budget-bar-item">
+        <div class="b-row"><span class="b-name">예비비 외</span><span class="b-amt">2,000만원</span></div>
+        <div class="budget-track"><div class="budget-fill" style="width:33%"></div></div>
+      </div>
+    `
+  },
+  {
+    id: 5,
+    title: "기대 효과",
+    location: "성산일출봉",
+    cameraPos: { x: -14, y: 10, z: -8 },
+    cameraTarget: { x: -10, y: 0, z: -16 },
+    charTarget: { x: -12, z: -12 },
+    speech: "이런 놀라운 효과를 기대하고 있어요! ✨",
+    sky: 0xFF6B35,
+    content: `
+      <div class="panel-section-tag">EFFECTS</div>
+      <div class="panel-title">기대 효과</div>
+      <div class="prog-list">
+        <div class="prog-item">
+          <div class="p-icon">🏆</div>
+          <div><div class="p-name">브랜드 인지도 향상</div><div class="p-sub">전국·해외 미디어 노출 확대</div></div>
+        </div>
+        <div class="prog-item">
+          <div class="p-icon">💵</div>
+          <div><div class="p-name">농가 소득 증대</div><div class="p-sub">직거래로 중간 유통 절감</div></div>
+        </div>
+        <div class="prog-item">
+          <div class="p-icon">✈️</div>
+          <div><div class="p-name">관광객 유입 확대</div><div class="p-sub">연관 산업 동반 성장 기대</div></div>
+        </div>
+        <div class="prog-item">
+          <div class="p-icon">🌿</div>
+          <div><div class="p-name">농업문화 홍보</div><div class="p-sub">스마트농업 미래 비전 공개</div></div>
+        </div>
+      </div>
+    `
+  },
+  {
+    id: 6,
+    title: "성과 지표 (KPI)",
+    location: "해변 전망대",
+    cameraPos: { x: 0, y: 7, z: -26 },
+    cameraTarget: { x: 0, y: 0, z: -34 },
+    charTarget: { x: 1, z: -30 },
+    speech: "목표 방문객 5만 명! 달성해봐요 🎯",
+    sky: 0x1A6B9A,
+    content: `
+      <div class="panel-section-tag">KPI</div>
+      <div class="panel-title">성과 지표</div>
+      <div class="kpi-grid">
+        <div class="kpi-box"><div class="k-num">5만+</div><div class="k-unit">명</div><div class="k-label">목표 방문객</div></div>
+        <div class="kpi-box"><div class="k-num">300+</div><div class="k-unit">농가</div><div class="k-label">참여 농가</div></div>
+        <div class="kpi-box"><div class="k-num">10억+</div><div class="k-unit">원</div><div class="k-label">직거래 매출</div></div>
+        <div class="kpi-box"><div class="k-num">95%+</div><div class="k-unit"></div><div class="k-label">만족도</div></div>
+        <div class="kpi-box"><div class="k-num">5만+</div><div class="k-unit">건</div><div class="k-label">SNS 게시물</div></div>
+        <div class="kpi-box"><div class="k-num">20+</div><div class="k-unit">건</div><div class="k-label">언론 보도</div></div>
+      </div>
+    `
+  },
+  {
+    id: 7,
+    title: "마무리",
+    location: "제주 공항 — 귀가",
+    cameraPos: { x: 0, y: 12, z: 30 },
+    cameraTarget: { x: 0, y: 0, z: 0 },
+    charTarget: { x: 0, z: 8 },
+    speech: "감사합니다! 함께 성공적인 축제를 만들어요! 🍊🎊",
+    sky: 0xFF8C42,
+    content: `
+      <div class="panel-section-tag">CLOSING</div>
+      <div class="panel-title" style="font-size:20px">제주 감귤 축제로<br>함께 만드는 성공!</div>
+      <div class="panel-body" style="margin-top:12px">2억 원의 예산으로 5만 명이 함께하는 축제, 제주 감귤 브랜드와 지역경제를 함께 키웁니다.</div>
+      <div class="panel-divider"></div>
+      <div class="tag-list">
+        <span class="tag">🍊 브랜드 강화</span>
+        <span class="tag">💵 농가 소득</span>
+        <span class="tag">✈️ 관광 활성화</span>
+        <span class="tag">🎵 문화 축제</span>
+        <span class="tag">🤝 지역 상생</span>
+      </div>
+      <div class="highlight-box" style="margin-top:16px;text-align:center">
+        <div style="font-size:36px;margin-bottom:4px">🍊</div>
+        <div style="font-size:16px;font-weight:700;color:#f28c28">2026 제주 감귤 축제</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px">Thank you!</div>
+      </div>
+    `
+  }
+];
+
+// ============================================================
+// THREE.JS SCENE
+// ============================================================
+let scene, camera, renderer, clock;
+let character, characterBody, characterHead, characterLegs = [];
+let mixerTime = 0;
+let currentSlide = 0;
+let isAnimating = false;
+let walkPath = [];
+let walkProgress = 0;
+let isWalking = false;
+let targetReached = false;
+
+// World objects
+let ground, skyMesh;
+const worldObjects = [];
+const trees = [];
+const buildings = [];
+const particles = [];
+
+function initScene() {
+  scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x87CEEB, 0.018);
+
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+  camera.position.set(0, 8, 18);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+  document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+  clock = new THREE.Clock();
+
+  // LIGHTS
+  const ambientLight = new THREE.AmbientLight(0xfff8f0, 0.7);
+  scene.add(ambientLight);
+
+  const sunLight = new THREE.DirectionalLight(0xfff3e0, 1.4);
+  sunLight.position.set(20, 40, 20);
+  sunLight.castShadow = true;
+  sunLight.shadow.mapSize.width = 2048;
+  sunLight.shadow.mapSize.height = 2048;
+  sunLight.shadow.camera.near = 0.5;
+  sunLight.shadow.camera.far = 120;
+  sunLight.shadow.camera.left = -50;
+  sunLight.shadow.camera.right = 50;
+  sunLight.shadow.camera.top = 50;
+  sunLight.shadow.camera.bottom = -50;
+  scene.add(sunLight);
+
+  const fillLight = new THREE.DirectionalLight(0xb3d9ff, 0.4);
+  fillLight.position.set(-10, 10, -10);
+  scene.add(fillLight);
+
+  buildWorld();
+  buildCharacter();
+  buildMinimap();
+
+  window.addEventListener('resize', onResize);
+  animate();
+}
+
+function buildWorld() {
+  // GROUND — large island-like terrain
+  const groundGeo = new THREE.PlaneGeometry(120, 120, 60, 60);
+  const pos = groundGeo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), z = pos.getZ(i);
+    const dist = Math.sqrt(x*x + z*z);
+    let h = 0;
+    h += Math.sin(x * 0.08) * Math.cos(z * 0.08) * 1.2;
+    h += Math.sin(x * 0.2 + 1) * Math.sin(z * 0.15) * 0.5;
+    h -= dist * 0.012;
+    h = Math.max(h, -0.3);
+    pos.setY(i, h);
+  }
+  groundGeo.computeVertexNormals();
+  const groundMat = new THREE.MeshLambertMaterial({ color: 0x5a8a3c });
+  ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // OCEAN (flat blue plane)
+  const oceanGeo = new THREE.PlaneGeometry(300, 300);
+  const oceanMat = new THREE.MeshLambertMaterial({ color: 0x1a6b9a, transparent: true, opacity: 0.85 });
+  const ocean = new THREE.Mesh(oceanGeo, oceanMat);
+  ocean.rotation.x = -Math.PI / 2;
+  ocean.position.y = -0.8;
+  scene.add(ocean);
+
+  // PATH — winding road
+  const pathPoints = [
+    new THREE.Vector3(-8, 0.02, 10),
+    new THREE.Vector3(-6, 0.02, 4),
+    new THREE.Vector3(-4, 0.02, 0),
+    new THREE.Vector3(0, 0.02, -4),
+    new THREE.Vector3(4, 0.02, -8),
+    new THREE.Vector3(8, 0.02, -12),
+    new THREE.Vector3(4, 0.02, -18),
+    new THREE.Vector3(0, 0.02, -22),
+    new THREE.Vector3(-4, 0.02, -26),
+    new THREE.Vector3(-8, 0.02, -30),
+  ];
+  const pathCurve = new THREE.CatmullRomCurve3(pathPoints);
+  const pathPts = pathCurve.getPoints(80);
+  const pathGeo = new THREE.BufferGeometry().setFromPoints(pathPts);
+  // Create a wide path using tube
+  const tubeCurve = new THREE.CatmullRomCurve3(pathPoints);
+  const tubeGeo = new THREE.TubeGeometry(tubeCurve, 80, 0.5, 4, false);
+  const tubeMat = new THREE.MeshLambertMaterial({ color: 0xd4a85a });
+  const tube = new THREE.Mesh(tubeGeo, tubeMat);
+  tube.receiveShadow = true;
+  scene.add(tube);
+
+  // TREES scattered around
+  const treePositions = [
+    [-4,0,6],[3,0,8],[6,0,4],[-7,0,0],[8,0,-2],[-3,0,-6],[7,0,-6],
+    [-6,0,-10],[5,0,-14],[-10,0,-14],[9,0,-18],[-5,0,-20],[3,0,-24],
+    [-9,0,-24],[7,0,-28],[-2,0,-30],[10,0,6],[-12,0,4],[12,0,-8],
+    [-13,0,-18],[11,0,-22],[-11,0,-28],[2,0,12],[-2,0,14],
+  ];
+  treePositions.forEach(([x,y,z]) => buildTree(x, z));
+
+  // BUILDINGS — location markers
+  buildBuilding(-6, 4, 0xF5A623, "🍊"); // arrival
+  buildMountain(-10, -2);               // mountain
+  buildFarm(6, 2);                      // farm
+  buildStage(2, -16);                   // venue
+  buildBuilding(12, -14, 0x4A90D9, "🏛️"); // budget office
+  buildVolcano(-12, -12);               // seongsan
+  buildBeachTower(1, -30);              // beach tower
+  buildAirport(0, 8);                   // airport return
+
+  // CITRUS TREES (orange ball trees) near farm
+  buildCitrusTree(4, 4);
+  buildCitrusTree(7, 5);
+  buildCitrusTree(5, 7);
+
+  // CLOUDS
+  for (let i = 0; i < 8; i++) {
+    buildCloud(
+      (Math.random() - 0.5) * 60,
+      12 + Math.random() * 6,
+      (Math.random() - 0.5) * 60
+    );
+  }
+
+  // Floating citrus particles near farm
+  for (let i = 0; i < 12; i++) {
+    const geo = new THREE.SphereGeometry(0.15 + Math.random() * 0.1, 6, 6);
+    const mat = new THREE.MeshLambertMaterial({ color: 0xf28c28 });
+    const p = new THREE.Mesh(geo, mat);
+    p.position.set(4 + (Math.random()-0.5)*4, 1.5 + Math.random()*2, 2 + (Math.random()-0.5)*4);
+    p.userData.floatOffset = Math.random() * Math.PI * 2;
+    p.userData.floatSpeed = 0.8 + Math.random() * 0.5;
+    scene.add(p);
+    particles.push(p);
+  }
+}
+
+function buildTree(x, z) {
+  const group = new THREE.Group();
+  // trunk
+  const trunkGeo = new THREE.CylinderGeometry(0.1, 0.15, 1.2, 5);
+  const trunkMat = new THREE.MeshLambertMaterial({ color: 0x7a5230 });
+  const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+  trunk.position.y = 0.6;
+  trunk.castShadow = true;
+  group.add(trunk);
+  // foliage
+  const fGeo = new THREE.ConeGeometry(0.6 + Math.random()*0.3, 1.4 + Math.random()*0.4, 6);
+  const fMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(0.2 + Math.random()*0.1, 0.5 + Math.random()*0.15, 0.15) });
+  const foliage = new THREE.Mesh(fGeo, fMat);
+  foliage.position.y = 1.8;
+  foliage.castShadow = true;
+  group.add(foliage);
+  group.position.set(x, 0, z);
+  group.scale.setScalar(0.8 + Math.random() * 0.6);
+  scene.add(group);
+  trees.push(group);
+}
+
+function buildCitrusTree(x, z) {
+  const group = new THREE.Group();
+  const trunkGeo = new THREE.CylinderGeometry(0.08, 0.12, 1, 5);
+  const trunk = new THREE.Mesh(trunkGeo, new THREE.MeshLambertMaterial({ color: 0x7a5230 }));
+  trunk.position.y = 0.5;
+  group.add(trunk);
+  const fGeo = new THREE.SphereGeometry(0.6, 8, 8);
+  const foliage = new THREE.Mesh(fGeo, new THREE.MeshLambertMaterial({ color: 0x2e7d32 }));
+  foliage.position.y = 1.4;
+  group.add(foliage);
+  // small orange balls
+  for (let i = 0; i < 5; i++) {
+    const oGeo = new THREE.SphereGeometry(0.1, 6, 6);
+    const o = new THREE.Mesh(oGeo, new THREE.MeshLambertMaterial({ color: 0xf28c28 }));
+    const a = (i / 5) * Math.PI * 2;
+    o.position.set(Math.cos(a)*0.4, 1.3 + (Math.random()-0.5)*0.3, Math.sin(a)*0.4);
+    group.add(o);
+  }
+  group.position.set(x, 0, z);
+  scene.add(group);
+}
+
+function buildBuilding(x, z, color, label) {
+  const group = new THREE.Group();
+  const bGeo = new THREE.BoxGeometry(1.5, 2.5, 1.5);
+  const bMat = new THREE.MeshLambertMaterial({ color });
+  const b = new THREE.Mesh(bGeo, bMat);
+  b.position.y = 1.25;
+  b.castShadow = true;
+  group.add(b);
+  // roof
+  const rGeo = new THREE.ConeGeometry(1.2, 0.8, 4);
+  const r = new THREE.Mesh(rGeo, new THREE.MeshLambertMaterial({ color: 0xcc3300 }));
+  r.position.y = 2.9;
+  r.rotation.y = Math.PI / 4;
+  group.add(r);
+  group.position.set(x, 0, z);
+  scene.add(group);
+  buildings.push({ group, x, z });
+}
+
+function buildMountain(x, z) {
+  const group = new THREE.Group();
+  const mGeo = new THREE.ConeGeometry(4, 5, 8);
+  const mMat = new THREE.MeshLambertMaterial({ color: 0x6b8e5a });
+  const m = new THREE.Mesh(mGeo, mMat);
+  m.position.y = 2.5;
+  group.add(m);
+  // snow cap
+  const sGeo = new THREE.ConeGeometry(1.5, 1.5, 8);
+  const sMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  const s = new THREE.Mesh(sGeo, sMat);
+  s.position.y = 5.8;
+  group.add(s);
+  group.position.set(x, 0, z);
+  scene.add(group);
+}
+
+function buildFarm(x, z) {
+  const group = new THREE.Group();
+  // main barn
+  const bGeo = new THREE.BoxGeometry(3, 2, 2);
+  const b = new THREE.Mesh(bGeo, new THREE.MeshLambertMaterial({ color: 0xcc4422 }));
+  b.position.y = 1;
+  b.castShadow = true;
+  group.add(b);
+  const rGeo = new THREE.BoxGeometry(3.4, 0.3, 2.4);
+  const r = new THREE.Mesh(rGeo, new THREE.MeshLambertMaterial({ color: 0x882200 }));
+  r.position.y = 2.15;
+  group.add(r);
+  group.position.set(x, 0, z);
+  scene.add(group);
+}
+
+function buildStage(x, z) {
+  const group = new THREE.Group();
+  // platform
+  const pGeo = new THREE.BoxGeometry(5, 0.5, 3);
+  const p = new THREE.Mesh(pGeo, new THREE.MeshLambertMaterial({ color: 0x8B6914 }));
+  p.position.y = 0.25;
+  group.add(p);
+  // backdrop
+  const bgGeo = new THREE.BoxGeometry(5, 3, 0.2);
+  const bg = new THREE.Mesh(bgGeo, new THREE.MeshLambertMaterial({ color: 0xf28c28 }));
+  bg.position.set(0, 2, -1.5);
+  group.add(bg);
+  // poles
+  [-2.2, 2.2].forEach(px => {
+    const pgGeo = new THREE.CylinderGeometry(0.08, 0.08, 4, 6);
+    const pg = new THREE.Mesh(pgGeo, new THREE.MeshLambertMaterial({ color: 0x999 }));
+    pg.position.set(px, 2, 1.2);
+    group.add(pg);
+  });
+  group.position.set(x, 0, z);
+  scene.add(group);
+}
+
+function buildVolcano(x, z) {
+  const group = new THREE.Group();
+  const vGeo = new THREE.ConeGeometry(3, 4, 7);
+  const v = new THREE.Mesh(vGeo, new THREE.MeshLambertMaterial({ color: 0x4a6741 }));
+  v.position.y = 2;
+  group.add(v);
+  // crater
+  const cGeo = new THREE.CylinderGeometry(0.6, 0.9, 0.4, 7);
+  const c = new THREE.Mesh(cGeo, new THREE.MeshLambertMaterial({ color: 0x555 }));
+  c.position.y = 4.1;
+  group.add(c);
+  group.position.set(x, 0, z);
+  scene.add(group);
+}
+
+function buildBeachTower(x, z) {
+  const group = new THREE.Group();
+  const tGeo = new THREE.CylinderGeometry(0.15, 0.2, 4, 6);
+  const t = new THREE.Mesh(tGeo, new THREE.MeshLambertMaterial({ color: 0xd4a85a }));
+  t.position.y = 2;
+  group.add(t);
+  const topGeo = new THREE.BoxGeometry(1, 0.8, 1);
+  const top = new THREE.Mesh(topGeo, new THREE.MeshLambertMaterial({ color: 0xaaa }));
+  top.position.y = 4.4;
+  group.add(top);
+  group.position.set(x, 0, z);
+  scene.add(group);
+}
+
+function buildAirport(x, z) {
+  const group = new THREE.Group();
+  const bGeo = new THREE.BoxGeometry(6, 2, 3);
+  const b = new THREE.Mesh(bGeo, new THREE.MeshLambertMaterial({ color: 0xc8c8c8 }));
+  b.position.y = 1;
+  b.castShadow = true;
+  group.add(b);
+  const wingL = new THREE.BoxGeometry(2, 1.5, 1.2);
+  const wL = new THREE.Mesh(wingL, new THREE.MeshLambertMaterial({ color: 0xb0b0b0 }));
+  wL.position.set(-4, 0.75, 0);
+  group.add(wL);
+  const wR = wL.clone();
+  wR.position.set(4, 0.75, 0);
+  group.add(wR);
+  group.position.set(x, 0, z);
+  scene.add(group);
+}
+
+function buildCloud(x, y, z) {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  [[0,0,0,1.2],[1.2,0.2,0,1],[-.8,.1,0,.9],[0,0,1,.8],[0,0,-1,.8]].forEach(([cx,cy,cz,r]) => {
+    const g = new THREE.SphereGeometry(r, 7, 7);
+    const m = new THREE.Mesh(g, mat);
+    m.position.set(cx, cy, cz);
+    group.add(m);
+  });
+  group.position.set(x, y, z);
+  group.userData.floatOffset = Math.random() * Math.PI * 2;
+  scene.add(group);
+  particles.push(group);
+  group.userData.isCloud = true;
+  group.userData.baseX = x;
+}
+
+// ============================================================
+// CHARACTER — cute citrus mascot
+// ============================================================
+function buildCharacter() {
+  character = new THREE.Group();
+
+  // BODY — orange sphere
+  const bodyGeo = new THREE.SphereGeometry(0.4, 12, 12);
+  const bodyMat = new THREE.MeshLambertMaterial({ color: 0xf28c28 });
+  characterBody = new THREE.Mesh(bodyGeo, bodyMat);
+  characterBody.castShadow = true;
+  characterBody.position.y = 0.7;
+  character.add(characterBody);
+
+  // HEAD — slightly smaller sphere on top
+  const headGeo = new THREE.SphereGeometry(0.32, 12, 12);
+  const headMat = new THREE.MeshLambertMaterial({ color: 0xffa040 });
+  characterHead = new THREE.Mesh(headGeo, headMat);
+  characterHead.castShadow = true;
+  characterHead.position.y = 1.3;
+  character.add(characterHead);
+
+  // EYES
+  const eyeMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
+  [-0.1, 0.1].forEach(ex => {
+    const eGeo = new THREE.SphereGeometry(0.05, 6, 6);
+    const eye = new THREE.Mesh(eGeo, eyeMat);
+    eye.position.set(ex, 1.35, 0.28);
+    character.add(eye);
+  });
+
+  // SMILE — small arc using a torus
+  const smileGeo = new THREE.TorusGeometry(0.1, 0.025, 6, 10, Math.PI);
+  const smileMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
+  const smile = new THREE.Mesh(smileGeo, smileMat);
+  smile.position.set(0, 1.2, 0.29);
+  smile.rotation.z = Math.PI;
+  character.add(smile);
+
+  // LEGS
+  const legMat = new THREE.MeshLambertMaterial({ color: 0xe06000 });
+  for (let i = 0; i < 2; i++) {
+    const legGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.5, 6);
+    const leg = new THREE.Mesh(legGeo, legMat);
+    leg.position.set(i === 0 ? -0.15 : 0.15, 0.25, 0);
+    character.add(leg);
+    characterLegs.push(leg);
+  }
+
+  // LEAF on head
+  const leafGeo = new THREE.SphereGeometry(0.12, 6, 6);
+  leafGeo.scale(1, 0.4, 1);
+  const leafMat = new THREE.MeshLambertMaterial({ color: 0x2e7d32 });
+  const leaf = new THREE.Mesh(leafGeo, leafMat);
+  leaf.position.set(0, 1.65, 0);
+  character.add(leaf);
+
+  // SHADOW
+  const shadowGeo = new THREE.CircleGeometry(0.35, 8);
+  const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.2 });
+  const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.01;
+  character.add(shadow);
+
+  character.position.set(-6, 0, 4);
+  scene.add(character);
+}
+
+// ============================================================
+// MINIMAP
+// ============================================================
+let minimapCtx;
+function buildMinimap() {
+  const mc = document.getElementById('minimap-canvas');
+  minimapCtx = mc.getContext('2d');
+}
+
+function updateMinimap() {
+  if (!minimapCtx) return;
+  const w = 320, h = 200;
+  minimapCtx.clearRect(0, 0, w, h);
+
+  // background
+  minimapCtx.fillStyle = '#0d3b1a';
+  minimapCtx.beginPath();
+  minimapCtx.ellipse(w/2, h/2, w/2-4, h/2-4, 0, 0, Math.PI*2);
+  minimapCtx.fill();
+
+  // ocean border
+  minimapCtx.strokeStyle = '#1a6b9a';
+  minimapCtx.lineWidth = 6;
+  minimapCtx.beginPath();
+  minimapCtx.ellipse(w/2, h/2, w/2-4, h/2-4, 0, 0, Math.PI*2);
+  minimapCtx.stroke();
+
+  // path
+  const pathPts = [[-8,10],[-6,4],[-4,0],[0,-4],[4,-8],[8,-12],[4,-18],[0,-22],[-4,-26],[-8,-30]];
+  minimapCtx.strokeStyle = '#d4a85a';
+  minimapCtx.lineWidth = 2;
+  minimapCtx.beginPath();
+  pathPts.forEach(([x,z], i) => {
+    const mx = (x + 20) / 40 * w;
+    const my = (z + 35) / 65 * h;
+    i === 0 ? minimapCtx.moveTo(mx, my) : minimapCtx.lineTo(mx, my);
+  });
+  minimapCtx.stroke();
+
+  // location dots
+  SLIDES.forEach((s, i) => {
+    const cx = (s.charTarget.x + 20) / 40 * w;
+    const cy = (s.charTarget.z + 35) / 65 * h;
+    minimapCtx.fillStyle = i === currentSlide ? '#f28c28' : 'rgba(255,255,255,0.3)';
+    minimapCtx.beginPath();
+    minimapCtx.arc(cx, cy, i === currentSlide ? 5 : 3, 0, Math.PI*2);
+    minimapCtx.fill();
+  });
+
+  // character position
+  const cx = (character.position.x + 20) / 40 * w;
+  const cy = (character.position.z + 35) / 65 * h;
+  minimapCtx.fillStyle = '#fff';
+  minimapCtx.beginPath();
+  minimapCtx.arc(cx, cy, 5, 0, Math.PI*2);
+  minimapCtx.fill();
+  minimapCtx.fillStyle = '#f28c28';
+  minimapCtx.beginPath();
+  minimapCtx.arc(cx, cy, 3, 0, Math.PI*2);
+  minimapCtx.fill();
+}
+
+// ============================================================
+// CAMERA ANIMATION
+// ============================================================
+let camTarget = { x: 0, y: 8, z: 18 };
+let camLookTarget = { x: 0, y: 0, z: 0 };
+let camCurrent = { x: 0, y: 8, z: 18 };
+let camLookCurrent = { x: 0, y: 0, z: 0 };
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+// ============================================================
+// MAIN ANIMATION LOOP
+// ============================================================
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  const t = clock.elapsedTime;
+
+  // Walk animation
+  if (isWalking && walkPath.length > 1) {
+    walkProgress += dt * 3.5;
+    const maxP = walkPath.length - 1;
+    if (walkProgress >= maxP) {
+      walkProgress = maxP;
+      isWalking = false;
+      targetReached = true;
+      showSpeechBubble(SLIDES[currentSlide].speech);
+    }
+    const idx = Math.min(Math.floor(walkProgress), maxP - 1);
+    const frac = walkProgress - idx;
+    const from = walkPath[idx];
+    const to = walkPath[Math.min(idx+1, maxP)];
+    character.position.x = lerp(from.x, to.x, frac);
+    character.position.z = lerp(from.z, to.z, frac);
+
+    // Face direction
+    const dx = to.x - from.x, dz = to.z - from.z;
+    if (Math.abs(dx) + Math.abs(dz) > 0.01) {
+      character.rotation.y = Math.atan2(dx, dz);
+    }
+
+    // Walk bounce
+    characterBody.position.y = 0.7 + Math.abs(Math.sin(t * 12)) * 0.08;
+    characterLegs[0].rotation.x = Math.sin(t * 12) * 0.6;
+    characterLegs[1].rotation.x = -Math.sin(t * 12) * 0.6;
+  } else {
+    // Idle bounce
+    characterBody.position.y = 0.7 + Math.sin(t * 2) * 0.03;
+    characterLegs[0].rotation.x = 0;
+    characterLegs[1].rotation.x = 0;
+  }
+
+  // Head wobble
+  characterHead.rotation.y = Math.sin(t * 1.5) * 0.15;
+
+  // Float particles (citrus)
+  particles.forEach(p => {
+    if (p.userData.isCloud) {
+      p.position.x = p.userData.baseX + Math.sin(t * 0.1 + p.userData.floatOffset) * 3;
+    } else {
+      p.position.y += Math.sin(t * p.userData.floatSpeed + p.userData.floatOffset) * 0.003;
+      p.rotation.y += 0.01;
+    }
+  });
+
+  // Camera smooth follow
+  const slide = SLIDES[currentSlide];
+  const charX = character.position.x;
+  const charZ = character.position.z;
+
+  // Offset camera slightly based on slide definition
+  const targetCamX = slide.cameraPos.x + (charX - slide.charTarget.x) * 0.3;
+  const targetCamY = slide.cameraPos.y;
+  const targetCamZ = slide.cameraPos.z + (charZ - slide.charTarget.z) * 0.3;
+
+  camCurrent.x = lerp(camCurrent.x, targetCamX, dt * 1.8);
+  camCurrent.y = lerp(camCurrent.y, targetCamY, dt * 1.2);
+  camCurrent.z = lerp(camCurrent.z, targetCamZ, dt * 1.8);
+
+  camera.position.set(camCurrent.x, camCurrent.y, camCurrent.z);
+
+  // Look at character
+  const lookX = lerp(camLookCurrent.x, charX, dt * 2);
+  const lookY = lerp(camLookCurrent.y, 1, dt * 2);
+  const lookZ = lerp(camLookCurrent.z, charZ, dt * 2);
+  camLookCurrent.x = lookX;
+  camLookCurrent.y = lookY;
+  camLookCurrent.z = lookZ;
+  camera.lookAt(lookX, lookY, lookZ);
+
+  // Sky color lerp
+  if (skyMesh) {
+    const sc = SLIDES[currentSlide].sky;
+    scene.background = new THREE.Color(sc);
+    scene.fog.color = new THREE.Color(sc);
+  }
+
+  updateMinimap();
+  updateSpeechBubblePosition();
+
+  renderer.render(scene, camera);
+}
+
+function updateSpeechBubblePosition() {
+  const bubble = document.getElementById('speech-bubble');
+  if (!bubble.classList.contains('show')) return;
+
+  const v = new THREE.Vector3(character.position.x, character.position.y + 2.2, character.position.z);
+  v.project(camera);
+  const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+  const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
+  if (x > 0 && x < window.innerWidth * 0.6 && y > 50 && y < window.innerHeight - 100) {
+    bubble.style.left = (x + 10) + 'px';
+    bubble.style.top = (y - 20) + 'px';
+  }
+}
+
+let bubbleTimer = null;
+function showSpeechBubble(text) {
+  const bubble = document.getElementById('speech-bubble');
+  const bubbleText = document.getElementById('bubble-text');
+  bubbleText.textContent = text;
+  bubble.classList.add('show');
+  if (bubbleTimer) clearTimeout(bubbleTimer);
+  bubbleTimer = setTimeout(() => bubble.classList.remove('show'), 4000);
+}
+
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function goToSlide(idx) {
+  if (idx < 0 || idx >= SLIDES.length) return;
+  currentSlide = idx;
+  const slide = SLIDES[idx];
+
+  // Update HUD
+  document.getElementById('slide-title-hud').textContent = slide.title;
+  document.getElementById('slide-counter-hud').textContent = (idx+1) + ' / ' + SLIDES.length;
+  document.getElementById('nav-num').textContent = (idx+1) + ' / ' + SLIDES.length;
+  document.getElementById('progress-fill').style.width = ((idx+1) / SLIDES.length * 100) + '%';
+  document.getElementById('prevBtn').disabled = idx === 0;
+  document.getElementById('nextBtn').disabled = idx === SLIDES.length - 1;
+
+  // Update content panel
+  document.getElementById('content-panel').innerHTML = slide.content;
+
+  // Flash transition
+  const overlay = document.getElementById('transition-overlay');
+  overlay.classList.add('flash');
+  setTimeout(() => overlay.classList.remove('flash'), 300);
+
+  // Walk character to new position
+  const fromX = character.position.x;
+  const fromZ = character.position.z;
+  const toX = slide.charTarget.x;
+  const toZ = slide.charTarget.z;
+
+  // Build straight-line walk path
+  const steps = 20;
+  walkPath = [];
+  for (let i = 0; i <= steps; i++) {
+    walkPath.push({
+      x: fromX + (toX - fromX) * (i / steps),
+      z: fromZ + (toZ - fromZ) * (i / steps)
+    });
+  }
+  walkProgress = 0;
+  isWalking = true;
+  targetReached = false;
+}
+
+function navigate(dir) {
+  const newIdx = currentSlide + dir;
+  if (newIdx >= 0 && newIdx < SLIDES.length) goToSlide(newIdx);
+}
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') navigate(-1);
+});
+
+function startPresentation() {
+  const intro = document.getElementById('intro');
+  intro.style.opacity = '0';
+  setTimeout(() => intro.style.display = 'none', 800);
+  initScene();
+  scene.background = new THREE.Color(SLIDES[0].sky);
+  goToSlide(0);
+}
+</script>
+</body>
+</html>
